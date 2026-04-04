@@ -9,17 +9,23 @@ A full-stack backend application for a property rental platform built using Spri
 - 🖼️ Media Upload (Cloudinary Integration)
 - 📊 Analytics Tracking
 - 📧 Email Services (OTP & Notifications)
-- 🗄️ MySQL Database Integration
+- 🗄️ PostgreSQL Database Integration
 
 ## 🛠️ Tech Stack
 
 - Java 17
 - Spring Boot
 - Spring Data JPA (Hibernate)
-- MySQL
+- PostgreSQL
 - Cloudinary
 - Maven
 
 ## ⚙️ Configuration
 
 Environment variables required:
+
+- DB_URL
+- DB_USERNAME
+- DB_PASSWORD
+- MAIL_USERNAME
+- MAIL_PASSWORD
