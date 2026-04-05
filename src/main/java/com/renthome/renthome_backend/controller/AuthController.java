@@ -179,7 +179,7 @@ public class AuthController {
         ownerRepository.deleteById(id);
         return "User deleted successfully";
     }
-
+a
     // ================= VERIFY OTP =================
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> body) {
