@@ -37,6 +37,9 @@ public class AuthController {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
+    @Autowired
+private OwnerRepository ownerRepository;
+
     @PostMapping("/send-magic-link")
     public ResponseEntity<?> sendMagicLink(@RequestBody(required = false) Map<String, String> request) {
 
@@ -170,6 +173,12 @@ public class AuthController {
 
         return ResponseEntity.ok("OTP sent successfully");
     }
+
+    @DeleteMapping("/delete/{id}")
+public String deleteUser(@PathVariable Long id) {
+    ownerRepository.deleteById(id);
+    return "User deleted successfully";
+}
 
     // ================= VERIFY OTP =================
     @PostMapping("/verify-otp")
