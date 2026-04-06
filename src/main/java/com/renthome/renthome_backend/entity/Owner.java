@@ -1,13 +1,6 @@
 package com.renthome.renthome_backend.entity;
 
-import org.hibernate.annotations.Collate;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "owner")
@@ -17,14 +10,35 @@ public class Owner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
-    private String mobile;
-    @Column(unique = true)
-    private String email;
-    private String password;
-    private String role; // ADMIN or USER
 
-    // ✅ GETTERS
+    @Column(nullable = false, unique = true)
+    private String mobile;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String role; // ADMIN or OWNER
+
+    // ✅ REQUIRED DEFAULT CONSTRUCTOR (VERY IMPORTANT)
+    public Owner() {
+    }
+
+    // ✅ PARAMETERIZED CONSTRUCTOR (OPTIONAL BUT GOOD)
+    public Owner(String name, String mobile, String email, String password, String role) {
+        this.name = name;
+        this.mobile = mobile;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
+
+    // ================= GETTERS =================
 
     public Long getId() {
         return id;
@@ -47,19 +61,14 @@ public class Owner {
     }
 
     public String getRole() {
-    return role;
-}
+        return role;
+    }
 
-    // ✅ SETTERS
+    // ================= SETTERS =================
 
     public void setId(Long id) {
         this.id = id;
     }
-
-    
-public void setRole(String role) {
-    this.role = role;
-}
 
     public void setName(String name) {
         this.name = name;
@@ -75,5 +84,9 @@ public void setRole(String role) {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

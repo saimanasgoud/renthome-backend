@@ -206,8 +206,11 @@ public class AuthController {
     }
 
     // ================= SIGNUP =================
+  
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody Owner owner) {
+public ResponseEntity<?> signup(@RequestBody Owner owner) {
+
+    try {
 
         if (owner.getMobile() == null || owner.getPassword() == null || owner.getEmail() == null) {
             return ResponseEntity.badRequest().body("Mobile, Email & Password required");
@@ -221,7 +224,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Email already registered");
         }
 
-        // ✅ IMPORTANT
+        // ✅ FIX
         owner.setRole("OWNER");
 
         Owner saved = repo.save(owner);
@@ -233,8 +236,12 @@ public class AuthController {
                 "ownerId", saved.getId(),
                 "role", saved.getRole(),
                 "message", "Signup successful"));
-    }
 
+    } catch (Exception e) {
+        e.printStackTrace(); // 🔥 IMPORTANT
+        return ResponseEntity.status(500).body("ERROR: " + e.getMessage());
+    }
+}
     // ================= LOGIN =================
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
