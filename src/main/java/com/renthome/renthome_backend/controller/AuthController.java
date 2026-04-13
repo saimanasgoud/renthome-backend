@@ -40,48 +40,55 @@ public class AuthController {
     @Autowired
     private OwnerRepository ownerRepository;
 
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
     @PostMapping("/send-magic-link")
-    public ResponseEntity<?> sendMagicLink(@RequestBody(required = false) Map<String, String> request) {
+    public ResponseEntity<?> sendMagicLink(@RequestBody Map<String, String> request) {
 
         try {
-            // ✅ FIX 1: check request
-            if (request == null) {
-                return ResponseEntity.badRequest().body("Request body is missing");
-            }
-
             String email = request.get("email");
+            System.out.println("STEP 1: Request received for email: " + email);
 
-            // ✅ FIX 2: check email
             if (email == null || email.isEmpty()) {
-                return ResponseEntity.badRequest().body("Email is required");
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Email is required"));
             }
-
-            System.out.println("EMAIL: " + email);
 
             Owner owner = repo.findTopByEmail(email);
 
-            // ✅ FIX 3: check owner
             if (owner == null) {
-                return ResponseEntity.badRequest().body("Email not registered");
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "❌ Email not registered"));
             }
 
-            System.out.println("OWNER: " + owner.getEmail());
             String token = magicLinkService.generateToken(email);
-            System.out.println("TOKEN: " + token);
-            System.out.println("TOKEN GENERATED: " + token);
+            System.out.println("STEP 2: Token generated");
 
             String link = frontendUrl + "/magic-login?token=" + token;
-            System.out.println("CALLING EMAIL SERVICE...");
+            System.out.println("STEP 3: Link created: " + link);
 
-            // ✅ ADD THIS LINE HERE
-            emailService.sendMagicLink(email, link, owner.getName());
-            System.out.println("CALLING EMAIL SERVICE...");
+            System.out.println("STEP 4: Calling email service...");
 
-            return ResponseEntity.ok("Magic link sent");
+            new Thread(() -> {
+                emailService.sendMagicLink(email, link, owner.getName());
+            }).start();
+            System.out.println("STEP 5: Email service completed");
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "✅ Magic link sent to " + email));
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("ERROR: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "❌ Email failed: " + e.getMessage()));
         }
     }
 
@@ -206,65 +213,66 @@ public class AuthController {
     }
 
     // ================= SIGNUP =================
-  
+
     @PostMapping("/signup")
-public ResponseEntity<?> signup(@RequestBody Owner owner) {
+    public ResponseEntity<?> signup(@RequestBody Owner owner) {
 
-    try {
+        try {
 
-        if (owner.getMobile() == null || owner.getPassword() == null || owner.getEmail() == null) {
-            return ResponseEntity.badRequest().body("Mobile, Email & Password required");
+            if (owner.getMobile() == null || owner.getPassword() == null || owner.getEmail() == null) {
+                return ResponseEntity.badRequest().body("Mobile, Email & Password required");
+            }
+
+            if (repo.findByMobile(owner.getMobile()) != null) {
+                return ResponseEntity.badRequest().body("Mobile already registered");
+            }
+
+            if (repo.findTopByEmail(owner.getEmail()) != null) {
+                return ResponseEntity.badRequest().body("Email already registered");
+            }
+
+            // ✅ FIX
+            owner.setRole("USER");
+
+            Owner saved = repo.save(owner);
+
+            String token = jwtUtil.generateToken(saved.getId());
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "ownerId", saved.getId(),
+                    "role", saved.getRole(),
+                    "message", "Signup successful"));
+
+        } catch (Exception e) {
+            e.printStackTrace(); // 🔥 IMPORTANT
+            return ResponseEntity.status(500).body("ERROR: " + e.getMessage());
         }
-
-        if (repo.findByMobile(owner.getMobile()) != null) {
-            return ResponseEntity.badRequest().body("Mobile already registered");
-        }
-
-        if (repo.findTopByEmail(owner.getEmail()) != null) {
-            return ResponseEntity.badRequest().body("Email already registered");
-        }
-
-        // ✅ FIX
-        owner.setRole("OWNER");
-
-        Owner saved = repo.save(owner);
-
-        String token = jwtUtil.generateToken(saved.getId());
-
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "ownerId", saved.getId(),
-                "role", saved.getRole(),
-                "message", "Signup successful"));
-
-    } catch (Exception e) {
-        e.printStackTrace(); // 🔥 IMPORTANT
-        return ResponseEntity.status(500).body("ERROR: " + e.getMessage());
     }
-}
+
     // ================= LOGIN =================
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
 
-        String mobile = body.get("mobile");
-        String password = body.get("password");
+    String mobile = body.get("mobile");
+    String password = body.get("password");
 
-        if (mobile == null || password == null) {
-            return ResponseEntity.badRequest().body("Mobile & Password required");
-        }
-
-        Owner owner = repo.findByMobile(mobile);
-
-        if (owner == null || !owner.getPassword().equals(password)) {
-            return ResponseEntity.status(401).body("Invalid credentials");
-        }
-
-        String token = jwtUtil.generateToken(owner.getId());
-
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "ownerId", owner.getId(),
-                "role", owner.getRole() != null ? owner.getRole() : "USER",
-                "message", "Login successful"));
+    if (mobile == null || password == null) {
+        return ResponseEntity.badRequest().body("Mobile & Password required");
     }
+
+    Owner owner = repo.findByMobile(mobile);
+
+    if (owner == null || !owner.getPassword().equals(password)) {
+        return ResponseEntity.status(401).body("Invalid credentials");
+    }
+
+    String token = jwtUtil.generateToken(owner.getId());
+
+    return ResponseEntity.ok(Map.of(
+            "token", token,
+            "ownerId", owner.getId(),
+            "role", owner.getRole()
+    ));
+}
 }
