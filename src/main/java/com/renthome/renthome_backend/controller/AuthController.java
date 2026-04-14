@@ -40,6 +40,49 @@ public class AuthController {
     @Autowired
     private OwnerRepository ownerRepository;
 
+    @Value("${admin.email}")
+private String adminEmail;
+
+@Value("${admin.password}")
+private String adminPassword;
+
+@PostMapping("/login")
+public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+
+    String mobile = body.get("mobile");
+    String password = body.get("password");
+
+    if (mobile == null || password == null) {
+        return ResponseEntity.badRequest().body("Mobile & Password required");
+    }
+
+    // ================= ADMIN LOGIN =================
+if (mobile != null && mobile.equalsIgnoreCase(adminEmail) && password.equals(adminPassword)) {
+        String token = jwtUtil.generateToken(0L);
+
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "ownerId", 0,
+                "role", "ADMIN"
+        ));
+    }
+
+    // ================= USER LOGIN =================
+    Owner owner = ownerRepository.findByMobile(mobile);
+
+    if (owner == null || !owner.getPassword().equals(password)) {
+        return ResponseEntity.status(401).body("Invalid credentials");
+    }
+
+    String token = jwtUtil.generateToken(owner.getId());
+
+    return ResponseEntity.ok(Map.of(
+            "token", token,
+            "ownerId", owner.getId(),
+            "role", owner.getRole() != null ? owner.getRole() : "USER"
+    ));
+}
+
     @PostMapping("/send-magic-link")
     public ResponseEntity<?> sendMagicLink(@RequestBody Map<String, String> request) {
 
@@ -243,30 +286,4 @@ public class AuthController {
             return ResponseEntity.status(500).body("ERROR: " + e.getMessage());
         }
     }
-
-    // ================= LOGIN =================
-    @PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-
-    String mobile = body.get("mobile");
-    String password = body.get("password");
-
-    if (mobile == null || password == null) {
-        return ResponseEntity.badRequest().body("Mobile & Password required");
-    }
-
-    Owner owner = repo.findByMobile(mobile);
-
-    if (owner == null || !owner.getPassword().equals(password)) {
-        return ResponseEntity.status(401).body("Invalid credentials");
-    }
-
-    String token = jwtUtil.generateToken(owner.getId());
-
-    return ResponseEntity.ok(Map.of(
-            "token", token,
-            "ownerId", owner.getId(),
-            "role", owner.getRole()
-    ));
-}
 }
