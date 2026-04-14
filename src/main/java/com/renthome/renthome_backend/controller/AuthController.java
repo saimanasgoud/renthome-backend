@@ -40,12 +40,6 @@ public class AuthController {
     @Autowired
     private OwnerRepository ownerRepository;
 
-    @Value("${admin.email}")
-    private String adminEmail;
-
-    @Value("${admin.password}")
-    private String adminPassword;
-
     @PostMapping("/send-magic-link")
     public ResponseEntity<?> sendMagicLink(@RequestBody Map<String, String> request) {
 
