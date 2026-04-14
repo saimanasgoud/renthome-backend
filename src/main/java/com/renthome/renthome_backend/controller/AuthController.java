@@ -40,8 +40,8 @@ public class AuthController {
     @Autowired
     private OwnerRepository ownerRepository;
 
-    @Value("${admin.email}")
-private String adminEmail;
+    @Value("${admin.mobile}")
+private String adminMobile;
 
 @Value("${admin.password}")
 private String adminPassword;
@@ -56,8 +56,8 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         return ResponseEntity.badRequest().body("Mobile & Password required");
     }
 
-    // ================= ADMIN LOGIN =================
-if (mobile != null && mobile.equalsIgnoreCase(adminEmail) && password.equals(adminPassword)) {
+    // ================= ADMIN LOGIN (USING MOBILE FIELD) =================
+if (mobile.equals(adminMobile) && password.equals(adminPassword)) {
         String token = jwtUtil.generateToken(0L);
 
         return ResponseEntity.ok(Map.of(
@@ -67,11 +67,15 @@ if (mobile != null && mobile.equalsIgnoreCase(adminEmail) && password.equals(adm
         ));
     }
 
-    // ================= USER LOGIN =================
+    // ================= USER / OWNER LOGIN =================
     Owner owner = ownerRepository.findByMobile(mobile);
 
-    if (owner == null || !owner.getPassword().equals(password)) {
-        return ResponseEntity.status(401).body("Invalid credentials");
+    if (owner == null) {
+        return ResponseEntity.status(401).body("Mobile number not registered");
+    }
+
+    if (!owner.getPassword().equals(password)) {
+        return ResponseEntity.status(401).body("Incorrect password");
     }
 
     String token = jwtUtil.generateToken(owner.getId());
@@ -269,7 +273,7 @@ if (mobile != null && mobile.equalsIgnoreCase(adminEmail) && password.equals(adm
             }
 
             // ✅ FIX
-            owner.setRole("USER");
+            owner.setRole("OWNER");
 
             Owner saved = repo.save(owner);
 
