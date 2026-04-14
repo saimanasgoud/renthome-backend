@@ -43,6 +43,9 @@ public class AuthController {
     @Value("${admin.mobile}")
 private String adminMobile;
 
+@Value("${admin.email}")
+private String adminEmail;
+
 @Value("${admin.password}")
 private String adminPassword;
 
@@ -50,14 +53,22 @@ private String adminPassword;
 public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
 
     String mobile = body.get("mobile");
+    String email = body.get("email");
     String password = body.get("password");
 
-    if (mobile == null || password == null) {
-        return ResponseEntity.badRequest().body("Mobile & Password required");
+    if (password == null) {
+        return ResponseEntity.badRequest().body("Password required");
     }
 
-    // ================= ADMIN LOGIN (USING MOBILE FIELD) =================
-if (mobile.equals(adminMobile) && password.equals(adminPassword)) {
+    // ================= ADMIN LOGIN (MOBILE OR EMAIL) =================
+    if (
+        (mobile != null && mobile.equals(adminMobile)) ||
+        (email != null && email.equalsIgnoreCase(adminEmail))
+    ) {
+        if (!password.equals(adminPassword)) {
+            return ResponseEntity.status(401).body("Incorrect admin password");
+        }
+
         String token = jwtUtil.generateToken(0L);
 
         return ResponseEntity.ok(Map.of(
@@ -67,11 +78,15 @@ if (mobile.equals(adminMobile) && password.equals(adminPassword)) {
         ));
     }
 
-    // ================= USER / OWNER LOGIN =================
+    // ================= USER LOGIN =================
+    if (mobile == null) {
+        return ResponseEntity.badRequest().body("Mobile required for user login");
+    }
+
     Owner owner = ownerRepository.findByMobile(mobile);
 
     if (owner == null) {
-        return ResponseEntity.status(401).body("Mobile number not registered");
+        return ResponseEntity.status(401).body("Mobile not registered");
     }
 
     if (!owner.getPassword().equals(password)) {
