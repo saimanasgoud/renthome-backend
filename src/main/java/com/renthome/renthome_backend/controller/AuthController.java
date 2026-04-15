@@ -41,66 +41,62 @@ public class AuthController {
     private OwnerRepository ownerRepository;
 
     @Value("${admin.mobile}")
-private String adminMobile;
+    private String adminMobile;
 
-@Value("${admin.email}")
-private String adminEmail;
+    @Value("${admin.email}")
+    private String adminEmail;
 
-@Value("${admin.password}")
-private String adminPassword;
+    @Value("${admin.password}")
+    private String adminPassword;
 
-@PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
 
-    String mobile = body.get("mobile");
-    String email = body.get("email");
-    String password = body.get("password");
+        String mobile = body.get("mobile");
+        String email = body.get("email");
+        String password = body.get("password");
 
-    if (password == null) {
-        return ResponseEntity.badRequest().body("Password required");
-    }
-
-    // ================= ADMIN LOGIN (MOBILE OR EMAIL) =================
-    if (
-        (mobile != null && mobile.equals(adminMobile)) ||
-        (email != null && email.equalsIgnoreCase(adminEmail))
-    ) {
-        if (!password.equals(adminPassword)) {
-            return ResponseEntity.status(401).body("Incorrect admin password");
+        if (password == null) {
+            return ResponseEntity.badRequest().body("Password required");
         }
 
-        String token = jwtUtil.generateToken(0L);
+        // ================= ADMIN LOGIN (MOBILE OR EMAIL) =================
+        if ((mobile != null && mobile.equals(adminMobile)) ||
+                (email != null && email.equalsIgnoreCase(adminEmail))) {
+            if (!password.equals(adminPassword)) {
+                return ResponseEntity.status(401).body("Incorrect admin password");
+            }
+
+            String token = jwtUtil.generateToken(0L);
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "ownerId", 0,
+                    "role", "ADMIN"));
+        }
+
+        // ================= USER LOGIN =================
+        if (mobile == null) {
+            return ResponseEntity.badRequest().body("Mobile required for user login");
+        }
+
+        Owner owner = ownerRepository.findByMobile(mobile);
+
+        if (owner == null) {
+            return ResponseEntity.status(401).body("Mobile not registered");
+        }
+
+        if (!owner.getPassword().equals(password)) {
+            return ResponseEntity.status(401).body("Incorrect password");
+        }
+
+        String token = jwtUtil.generateToken(owner.getId());
 
         return ResponseEntity.ok(Map.of(
                 "token", token,
-                "ownerId", 0,
-                "role", "ADMIN"
-        ));
+                "ownerId", owner.getId(),
+                "role", owner.getRole() != null ? owner.getRole() : "USER"));
     }
-
-    // ================= USER LOGIN =================
-    if (mobile == null) {
-        return ResponseEntity.badRequest().body("Mobile required for user login");
-    }
-
-    Owner owner = ownerRepository.findByMobile(mobile);
-
-    if (owner == null) {
-        return ResponseEntity.status(401).body("Mobile not registered");
-    }
-
-    if (!owner.getPassword().equals(password)) {
-        return ResponseEntity.status(401).body("Incorrect password");
-    }
-
-    String token = jwtUtil.generateToken(owner.getId());
-
-    return ResponseEntity.ok(Map.of(
-            "token", token,
-            "ownerId", owner.getId(),
-            "role", owner.getRole() != null ? owner.getRole() : "USER"
-    ));
-}
 
     @PostMapping("/send-magic-link")
     public ResponseEntity<?> sendMagicLink(@RequestBody Map<String, String> request) {
@@ -131,15 +127,23 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
 
             System.out.println("STEP 4: Calling email service...");
 
-            new Thread(() -> {
-                emailService.sendMagicLink(email, link, owner.getName());
-            }).start();
+            // new Thread(() -> {
+            // emailService.sendMagicLink(email, link, owner.getName());
+            // }).start();
+
+            boolean sent = emailService.sendMagicLink(email, link, owner.getName());
+
             System.out.println("STEP 5: Email service completed");
+
+            if (!sent) {
+                return ResponseEntity.status(500).body(Map.of(
+                        "success", false,
+                        "message", "❌ Email sending failed"));
+            }
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "✅ Magic link sent to " + email));
-
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
@@ -178,6 +182,11 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error fetching profile");
         }
+    }
+
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("Server is running");
     }
 
     @PostMapping("/magic-login")
