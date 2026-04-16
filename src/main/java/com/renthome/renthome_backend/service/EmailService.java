@@ -35,36 +35,36 @@ public class EmailService {
             helper.setSubject("Login to RentHome");
 
             helper.setText(
-                    "<div style='font-family: Arial; padding:20px; background:#f9f9f9;'>"
-                            + "<h2 style='color:#16a34a;'>🏠 RentHome</h2>"
+                    "<div style='font-family: Arial; padding:20px; background:#f4f6f8;'>"
 
-                            + "<p>Hi " + name + ",</p>"
+                            + "<div style='max-width:500px; margin:auto; background:white; padding:20px; border-radius:10px;'>"
 
-                            + "<p>We received a request to login to your RentHome account.</p>"
+                            + "<h2 style='color:#2563eb; text-align:center;'>🏠 RentHome</h2>"
 
-                            + "<div style='margin:20px 0;'>"
+                            + "<p>Hi <b>" + name + "</b>,</p>"
+
+                            + "<p>Click below to login securely:</p>"
+
+                            + "<div style='text-align:center; margin:20px;'>"
                             + "<a href='" + link + "' "
                             + "style='background:#2563eb; color:white; padding:12px 20px; "
-                            + "text-decoration:none; border-radius:6px;'>"
-                            + "Login Securely"
+                            + "text-decoration:none; border-radius:8px; font-weight:bold;'>"
+                            + "Login to RentHome"
                             + "</a>"
                             + "</div>"
 
-                            + "<p style='color:#555;'>This link is valid for 5 minutes.</p>"
-
-                            + "<p style='color:#16a34a; font-weight:bold;'>"
-                            + "✔ 100% Safe & Secure | RentHome Verified Login"
-                            + "</p>"
+                            + "<p style='font-size:13px; color:#666;'>Link valid for 5 minutes</p>"
 
                             + "<hr/>"
 
-                            + "<p style='font-size:12px; color:#777;'>"
-                            + "If you did not request this login, please ignore this email."
+                            + "<p style='font-size:12px; color:#999;'>"
+                            + "If you didn’t request this, ignore this email."
                             + "</p>"
 
+                            + "</div>"
                             + "</div>",
                     true);
-
+                    
             mailSender.send(message);
 
             System.out.println("EMAIL SENT TO: " + toEmail);
